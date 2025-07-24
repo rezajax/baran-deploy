@@ -1,4 +1,3 @@
-
 version: '3.8'
 
 services:
@@ -6,18 +5,12 @@ services:
     build: .
     container_name: fitness-app
     ports:
-      - "1122:1122"
-    # Configure the admin account. These defaults can be overridden by
-    # setting environment variables when deploying. See server.js for
-    # additional details.
+      - "3000:3000"
     environment:
-      - ADMIN_EMAIL=${ADMIN_EMAIL:-test@test}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-test}
-    # Uncomment the following lines to persist the database between
-    # container restarts. This will store data.json in a Docker volume.
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     volumes:
-      - data:/app
+      - data:/app/data
 
 volumes:
   data:
-    # Named volume for persistent storage (optional)
