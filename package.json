@@ -1,0 +1,12 @@
+{
+  "name": "fitness-app",
+  "version": "1.0.0",
+  "description": "A simple fitness training management application using a local SQLite database and Express backend.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    
+  }
+}

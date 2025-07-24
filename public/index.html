@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اپلیکیشن مدیریت برنامه تمرینی</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Vazirmatn -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <!-- PDF Generation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background-color: #111827;
+            color: #e5e7eb;
+            overscroll-behavior: none;
+        }
+        .main-gradient-text {
+            background: linear-gradient(to right, #a855f7, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 1rem;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            cursor: pointer;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .btn-primary { background-color: #4f46e5; color: white; }
+        .btn-primary:hover:not(:disabled) { background-color: #4338ca; }
+        .btn-secondary { background-color: #374151; color: #e5e7eb; }
+        .btn-secondary:hover:not(:disabled) { background-color: #4b5563; }
+        .btn-danger { background-color: #dc2626; color: white; }
+        .btn-danger:hover:not(:disabled) { background-color: #b91c1c; }
+        .btn-success { background-color: #16a34a; color: white; }
+        .btn-success:hover:not(:disabled) { background-color: #15803d; }
+
+        /* Modal & Toast Styles */
+        .modal-overlay, .toast-container {
+            position: fixed;
+            z-index: 50;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal-overlay {
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: #1f2937;
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 500px;
+            transform: scale(0.95);
+            transition: transform 0.3s;
+        }
+        .modal-overlay:not(.hidden) .modal-content {
+            transform: scale(1);
+        }
+        .toast-container {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #1f2937;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #374151;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .hidden { display: none; }
+
+        .input-field {
+            background-color: #374151;
+            border: 1px solid #4b5563;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            width: 100%;
+            color: #e5e7eb;
+        }
+        .input-field-icon {
+            padding-left: 2.5rem;
+        }
+        
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        .sidebar-open {
+            transform: translateX(0) !important;
+        }
+        
+        /* NEW: Styles for PDF Export */
+        .pdf-export-mode {
+            background-color: white !important;
+        }
+        .pdf-export-mode .card {
+            background-color: #f8f9fa !important;
+            border: 1px solid #dee2e6 !important;
+            box-shadow: none !important;
+        }
+        .pdf-export-mode, .pdf-export-mode *, .pdf-export-mode .text-gray-300, .pdf-export-mode .text-gray-400 {
+            color: #212529 !important;
+        }
+        .pdf-export-mode .main-gradient-text {
+             background: none !important;
+            -webkit-text-fill-color: #4338ca !important;
+             color: #4338ca !important;
+        }
+        .pdf-export-mode .text-indigo-300, .pdf-export-mode .text-indigo-400 { color: #4338ca !important; }
+        .pdf-export-mode .text-purple-400 { color: #7e22ce !important; }
+        .pdf-export-mode .text-amber-400 { color: #b45309 !important; }
+        .pdf-export-mode .fa-play-circle { color: #15803d !important; }
+        .pdf-export-mode .fa-stop-circle { color: #b91c1c !important; }
+        .pdf-export-mode .fa-phone-alt { color: #4338ca !important; }
+        .pdf-export-mode .border-r-2 { border-color: #4338ca !important; }
+        .pdf-export-mode .text-pink-400, .pdf-export-mode .fa-instagram { color: #c13584 !important; }
+        .pdf-export-mode .text-sky-400, .pdf-export-mode .fa-telegram { color: #0088cc !important; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="app-container"></div>
+
+    <!-- Login View -->
+    <div id="login-view" class="hidden">
+        <div class="min-h-screen flex items-center justify-center p-4">
+            <div class="card p-8 w-full max-w-sm">
+                <h2 class="text-2xl font-bold text-center mb-6 main-gradient-text">ورود به پنل مدیریت</h2>
+                <form id="login-form">
+                    <div class="mb-4">
+                        <label for="email" class="block mb-2 text-sm font-medium text-gray-400">ایمیل</label>
+                        <input type="email" id="login-email" class="input-field" required>
+                    </div>
+                    <div class="mb-6 relative">
+                        <label for="password" class="block mb-2 text-sm font-medium text-gray-400">رمز عبور</label>
+                        <input type="password" id="login-password" class="input-field input-field-icon" required>
+                        <span id="toggle-password" class="absolute left-3 top-10 cursor-pointer text-gray-400">
+                            <i class="fas fa-eye"></i>
+                        </span>
+                    </div>
+                    <button type="submit" id="login-btn" class="btn btn-primary w-full">ورود</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Share Modal -->
+    <div id="share-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4">اشتراک گذاری برنامه</h3>
+            <p class="text-gray-400 mb-4">این لینک ثابت را کپی کرده و برای شاگرد خود ارسال کنید.</p>
+            <div class="flex items-center gap-2">
+                <input type="text" id="share-link-input" readonly class="input-field text-left" dir="ltr">
+                <button id="copy-link-btn" class="btn btn-primary px-4"><i class="fas fa-copy"></i></button>
+            </div>
+            <button id="close-modal-btn" class="btn btn-secondary w-full mt-6">بستن</button>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="modal-overlay hidden">
+        <div class="modal-content text-center">
+            <p id="confirm-modal-text" class="text-lg mb-6"></p>
+            <div class="flex justify-center gap-4">
+                <button id="confirm-modal-yes" class="btn btn-danger">بله، حذف کن</button>
+                <button id="confirm-modal-no" class="btn btn-secondary">انصراف</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast-container hidden"></div>
+
+<script>
+    /*
+     * This script replaces Firebase functionality with a local REST API. It
+     * manages authentication, user and admin views, PDF generation and CRUD
+     * operations using fetch calls to endpoints provided by the server.
+     */
+
+    const appContainer = document.getElementById('app-container');
+    const loginView = document.getElementById('login-view');
+    let athletes = [];
+    let currentAthleteId = null;
+    let token = localStorage.getItem('adminToken') || null;
+
+    // Display a toast message
+    function showToast(message, duration = 3000) {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), duration);
+    }
+
+    // Show confirmation modal
+    function showConfirm(text, onConfirm) {
+        const modal = document.getElementById('confirm-modal');
+        document.getElementById('confirm-modal-text').textContent = text;
+        modal.classList.remove('hidden');
+        const yesBtn = document.getElementById('confirm-modal-yes');
+        const noBtn = document.getElementById('confirm-modal-no');
+        const cleanup = () => {
+            modal.classList.add('hidden');
+            yesBtn.replaceWith(yesBtn.cloneNode(true));
+            noBtn.replaceWith(noBtn.cloneNode(true));
+        };
+        document.getElementById('confirm-modal-yes').addEventListener('click', () => { onConfirm(); cleanup(); }, { once: true });
+        document.getElementById('confirm-modal-no').addEventListener('click', cleanup, { once: true });
+    }
+
+    // Render the login view and handle login submission
+    function renderLoginView() {
+        appContainer.innerHTML = '';
+        loginView.classList.remove('hidden');
+        const loginForm = document.getElementById('login-form');
+        const passwordInput = document.getElementById('login-password');
+        const togglePassword = document.getElementById('toggle-password');
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            togglePassword.querySelector('i').classList.toggle('fa-eye');
+            togglePassword.querySelector('i').classList.toggle('fa-eye-slash');
+        });
+        loginForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+            const loginBtn = document.getElementById('login-btn');
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            try {
+                const resp = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    token = data.token;
+                    localStorage.setItem('adminToken', token);
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = 'ورود';
+                    renderAdminPanel();
+                    loadAthleteList();
+                } else {
+                    showToast('ایمیل یا رمز عبور اشتباه است.');
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = 'ورود';
+                }
+            } catch (error) {
+                console.error(error);
+                showToast('خطا در ورود.');
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = 'ورود';
+            }
+        };
+    }
+
+    // Generate a PDF of the current plan
+    async function generatePDF(athleteName) {
+        const pdfButton = document.getElementById('download-pdf-btn');
+        if (pdfButton) {
+            pdfButton.disabled = true;
+            pdfButton.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i>در حال ساخت...';
+        }
+        const elementToPrint = document.getElementById('plan-container');
+        if (!elementToPrint) {
+            showToast('خطا در ساخت PDF.');
+            if(pdfButton) { pdfButton.disabled = false; pdfButton.innerHTML = '<i class="fas fa-file-pdf ml-2"></i>دریافت PDF'; }
+            return;
+        }
+        const tabsContainer = document.getElementById('user-tabs-container');
+        const workoutTablesContainer = document.getElementById('user-workout-table-container');
+        const originalWorkoutHTML = workoutTablesContainer.innerHTML;
+        const buttonsToHide = document.querySelectorAll('.no-print');
+        tabsContainer.style.display = 'none';
+        workoutTablesContainer.innerHTML = document.querySelector('#all-days-for-pdf').innerHTML;
+        buttonsToHide.forEach(btn => btn.style.display = 'none');
+        elementToPrint.classList.add('pdf-export-mode');
+        const opt = {
+          margin:       [10, 5, 10, 5],
+          filename:     `${athleteName}-plan.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2, useCORS: true, logging: false },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        try {
+            await html2pdf().set(opt).from(elementToPrint).save();
+        } catch (e) {
+            console.error('PDF generation failed', e);
+            showToast('خطا در ساخت PDF.');
+        } finally {
+            elementToPrint.classList.remove('pdf-export-mode');
+            tabsContainer.style.display = 'flex';
+            workoutTablesContainer.innerHTML = originalWorkoutHTML;
+            buttonsToHide.forEach(btn => btn.style.display = 'flex');
+            if (pdfButton) {
+                pdfButton.disabled = false;
+                pdfButton.innerHTML = '<i class="fas fa-file-pdf ml-2"></i>دریافت PDF';
+            }
+        }
+    }
+
+    // Render the public view of a workout plan
+    function renderUserView(data) {
+        const { trainerName, athleteName, startDate, endDate, trainerPhone, instructions, workoutDays, importantNotes } = data;
+        loginView.classList.add('hidden');
+        const userStyles = `<style> .tab-active-user { background-color: #4f46e5 !important; color: #ffffff !important; box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.5); } details > summary { list-style: none; } details > summary::-webkit-details-marker { display: none; } .table-responsive { display: block; width: 100%; overflow-x: auto; } </style>`;
+        document.head.insertAdjacentHTML('beforeend', userStyles);
+        const allDaysHtmlForPdf = (workoutDays || []).map(day => {
+            const exercisesHtml = (day.exercises || []).map((ex, i) => 
+                `<tr class="border-b border-gray-700"><td class="p-3 text-center font-semibold text-indigo-400">${i + 1}</td><td class="p-3 font-medium">${ex.name}</td><td class="p-3 text-center">${ex.sets}</td><td class="p-3 text-gray-400">${ex.desc}</td></tr>`
+            ).join('');
+            return `<h4 class="text-lg font-bold text-indigo-300 mt-6 mb-3 text-center">${day.day}</h4><table class="w-full text-right"><thead class="border-b-2 border-gray-600"><tr><th class="p-3 text-center">#</th><th class="p-3">حرکت</th><th class="p-3 text-center">ست</th><th class="p-3">توضیحات</th></tr></thead><tbody>${exercisesHtml}</tbody></table>`;
+        }).join('');
+        appContainer.innerHTML = `
+            <div id="plan-container" class="container mx-auto p-4 md:p-8 max-w-4xl">
+                 <div class="flex justify-end mb-4 no-print">
+                    <button id="download-pdf-btn" class="btn btn-primary"><i class="fas fa-file-pdf ml-2"></i>دریافت PDF</button>
+                </div>
+                <header class="text-center mb-8">
+                    <h1 class="text-3xl md:text-4xl font-bold mb-2">برنامه تمرینی اختصاصی</h1>
+                    <h2 class="text-2xl md:text-3xl font-bold main-gradient-text">${trainerName}</h2>
+                </header>
+                <div class="card p-6 mb-8 text-center shadow-lg">
+                    <h3 class="text-xl font-bold mb-4">ورزشکار: <span class="main-gradient-text">${athleteName}</span></h3>
+                    <div class="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 text-gray-300">
+                        <div class="flex items-center gap-2"><i class="fas fa-play-circle text-green-400"></i><span>تاریخ شروع: ${startDate}</span></div>
+                        <div class="flex items-center gap-2"><i class="fas fa-stop-circle text-red-400"></i><span>تاریخ پایان: ${endDate}</span></div>
+                        <div class="flex items-center gap-2"><i class="fas fa-phone-alt text-indigo-400"></i><span>شماره مربی: <a href="tel:${trainerPhone}" class="hover:underline">${trainerPhone}</a></span></div>
+                    </div>
+                </div>
+                <div class="card p-6 mb-8 shadow-lg">
+                    <h3 class="text-xl font-bold mb-6 text-center text-indigo-400">برنامه تمرینی شما</h3>
+                    <div id="user-tabs-container" class="flex justify-center items-center gap-2 md:gap-4 mb-6 bg-gray-800 p-2 rounded-full overflow-x-auto no-print"></div>
+                    <div id="user-workout-table-container" class="table-responsive"></div>
+                    <div id="all-days-for-pdf" class="hidden">${allDaysHtmlForPdf}</div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8 mb-8">
+                    <div class="card p-6 shadow-lg">
+                        <details open><summary class="cursor-pointer flex justify-between items-center"><h3 class="text-lg font-bold text-purple-400"><i class="fas fa-clipboard-list ml-2"></i>نکات و دستور‌العمل‌ها</h3><i class="fas fa-chevron-down transition-transform duration-300 transform rotate-180"></i></summary><ul class="mt-4 space-y-3 text-gray-300 pr-4 border-r-2 border-purple-400">${(instructions || []).map(item => `<li>${item}</li>`).join('')}</ul></details>
+                    </div>
+                    <div class="card p-6 shadow-lg">
+                        <details open><summary class="cursor-pointer flex justify-between items-center"><h3 class="text-lg font-bold text-amber-400"><i class="fas fa-exclamation-triangle ml-2"></i>نکات مهم</h3><i class="fas fa-chevron-down transition-transform duration-300 transform rotate-180"></i></summary><ul class="mt-4 space-y-3 text-gray-300 pr-4 border-r-2 border-amber-400">${(importantNotes || []).map(item => `<li>${item}</li>`).join('')}</ul></details>
+                    </div>
+                </div>
+                <footer class="text-center mt-12 text-gray-400">
+                    <p>باران رو میتونی این جا دنبال کنی <span class="text-lg">🥺❤️</span></p>
+                    <div class="flex justify-center gap-6 mt-4">
+                        <a href="https://www.instagram.com/lifebarani" target="_blank" rel="noopener noreferrer" class="text-pink-400 hover:text-pink-300 text-3xl transition-transform transform hover:scale-110"><i class="fab fa-instagram"></i></a>
+                        <a href="https://t.me/lifebarani" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 text-3xl transition-transform transform hover:scale-110"><i class="fab fa-telegram"></i></a>
+                    </div>
+                </footer>
+            </div>
+        `;
+        document.getElementById('download-pdf-btn')?.addEventListener('click', () => generatePDF(athleteName));
+        const tabsContainer = document.getElementById('user-tabs-container');
+        const tableContainer = document.getElementById('user-workout-table-container');
+        tabsContainer.innerHTML = (workoutDays || []).map((day, index) => `<button data-index="${index}" class="user-tab-btn flex-shrink-0 px-4 py-2 text-sm font-semibold text-gray-300 rounded-full transition-all duration-300 ease-in-out hover:bg-gray-700">${day.day}</button>`).join('');
+        const renderTable = (dayIndex) => {
+            const day = (workoutDays || [])[dayIndex];
+            if (!day) return;
+            tableContainer.innerHTML = `<table class="w-full text-right"><thead class="border-b-2 border-gray-600"><tr><th class="p-3 text-center">#</th><th class="p-3">حرکت</th><th class="p-3 text-center">ست</th><th class="p-3">توضیحات</th></tr></thead><tbody>${(day.exercises || []).map((ex, i) => `<tr class="border-b border-gray-700 hover:bg-gray-700/50"><td class="p-3 text-center font-semibold text-indigo-400">${i + 1}</td><td class="p-3 font-medium">${ex.name}</td><td class="p-3 text-center">${ex.sets}</td><td class="p-3 text-gray-400">${ex.desc}</td></tr>`).join('')}</tbody></table>`;
+        };
+        document.querySelectorAll('.user-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.user-tab-btn').forEach(b => b.classList.remove('tab-active-user'));
+                btn.classList.add('tab-active-user');
+                renderTable(btn.dataset.index);
+            });
+        });
+        if ((workoutDays || []).length > 0) document.querySelector('.user-tab-btn')?.click();
+        document.querySelectorAll('details').forEach((detail) => {
+            detail.addEventListener('toggle', () => {
+                detail.querySelector('.fa-chevron-down')?.classList.toggle('rotate-180');
+            });
+        });
+    }
+
+    // Render the admin panel layout
+    function renderAdminPanel() {
+        loginView.classList.add('hidden');
+        const adminStyles = `<style> .tab-active-admin { background-color: #4f46e5 !important; color: #ffffff !important; } .sidebar-scroll::-webkit-scrollbar { display: none; } .sidebar-scroll { -ms-overflow-style: none; scrollbar-width: none; } </style>`;
+        document.head.insertAdjacentHTML('beforeend', adminStyles);
+        appContainer.innerHTML = `
+            <div class="relative min-h-screen md:flex">
+                <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-20 md:hidden hidden"></div>
+                <aside id="sidebar" class="sidebar bg-gray-800 text-white w-64 fixed inset-y-0 right-0 z-30 transform translate-x-full md:relative md:translate-x-0 flex-shrink-0">
+                    <div class="p-4 h-full flex flex-col">
+                        <div class="text-center mb-8 flex-shrink-0">
+                            <h1 class="text-xl font-bold main-gradient-text">پنل مدیریت باران</h1>
+                        </div>
+                        <h2 class="text-sm font-semibold text-gray-400 mb-2 uppercase flex-shrink-0">لیست شاگردان</h2>
+                        <div id="athlete-list" class="flex-grow overflow-y-auto sidebar-scroll space-y-2"><p class="text-gray-500">در حال بارگذاری...</p></div>
+                        <button id="add-athlete-btn" class="btn btn-primary w-full mt-4 flex-shrink-0"><i class="fas fa-plus ml-2"></i>افزودن شاگرد</button>
+                        <button id="logout-btn" class="btn btn-danger w-full mt-2 flex-shrink-0"><i class="fas fa-sign-out-alt ml-2"></i>خروج</button>
+                    </div>
+                </aside>
+                <main id="main-content" class="flex-1 p-4 md:p-8">
+                    <div class="md:hidden flex justify-between items-center mb-4">
+                        <h1 class="text-lg font-bold main-gradient-text">پنل مدیریت</h1>
+                        <button id="menu-toggle-btn" class="text-2xl"><i class="fas fa-bars"></i></button>
+                    </div>
+                    <div id="welcome-screen" class="flex items-center justify-center h-full">
+                        <div class="text-center text-gray-500"><i class="fas fa-users text-6xl mb-4"></i><h2 class="text-2xl font-bold">یک شاگرد را انتخاب کنید</h2><p>برای مشاهده یا ویرایش برنامه، یک شاگرد را از لیست انتخاب کنید.</p></div>
+                    </div>
+                    <div id="editor-screen" class="hidden"></div>
+                </main>
+            </div>
+        `;
+        setupAdminEventListeners();
+    }
+
+    // Render the list of athletes
+    function renderAthleteList() {
+        const athleteListContainer = document.getElementById('athlete-list');
+        if(!athleteListContainer) return;
+        if (athletes.length === 0) {
+            athleteListContainer.innerHTML = `<p class="text-gray-500 text-center p-4">هنوز شاگردی اضافه نشده است.</p>`;
+            return;
+        }
+        athleteListContainer.innerHTML = athletes.map(athlete => `<div data-id="${athlete.id}" class="athlete-item flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-gray-700 ${athlete.id === currentAthleteId ? 'bg-indigo-600 text-white' : ''}"><span class="font-semibold">${athlete.name}</span><i class="fas fa-chevron-left text-xs"></i></div>`).join('');
+        document.querySelectorAll('.athlete-item').forEach(item => {
+            item.addEventListener('click', () => {
+                loadAthleteEditor(item.dataset.id);
+                document.getElementById('sidebar')?.classList.remove('sidebar-open');
+                document.getElementById('sidebar-overlay')?.classList.add('hidden');
+            });
+        });
+    }
+
+    // Fetch the latest list of athletes
+    function loadAthleteList() {
+        fetch('/api/athletes', {
+            headers: { 'Authorization': token ? 'Bearer ' + token : '' }
+        }).then(resp => {
+            if (resp.status === 401) {
+                localStorage.removeItem('adminToken');
+                token = null;
+                renderLoginView();
+                return [];
+            }
+            return resp.json();
+        }).then(data => {
+            if (!Array.isArray(data)) return;
+            athletes = data;
+            renderAthleteList();
+            if (currentAthleteId) {
+                const currentData = athletes.find(a => a.id === currentAthleteId);
+                if (currentData) {
+                    const activeDay = document.querySelector('.day-tab.tab-active-admin')?.dataset.day || 0;
+                    renderEditor(currentData, parseInt(activeDay, 10));
+                } else {
+                    showWelcomeScreen();
+                }
+            }
+        }).catch(err => {
+            console.error(err);
+            showToast('خطا در دریافت اطلاعات.');
+        });
+    }
+
+    // Render the editor screen for a selected athlete
+    function renderEditor(athlete, activeDayIndex = 0) {
+        document.getElementById('welcome-screen').classList.add('hidden');
+        const editorScreen = document.getElementById('editor-screen');
+        editorScreen.classList.remove('hidden');
+        const plan = athlete.plan || {};
+        const workoutDays = plan.workoutDays || [];
+        let tabsHtml = workoutDays.map((day, index) => `<button class="day-tab flex-shrink-0 px-4 py-2 rounded-md font-semibold ${index === activeDayIndex ? 'tab-active-admin' : ''}" data-day="${index}">${day.day}</button>`).join('');
+        let daysHtml = workoutDays.map((day, dayIndex) => {
+            let exercises = day.exercises || [];
+            let exercisesHtml = exercises.map((ex, exIndex) => `<tr class="exercise-row"><td class="p-2"><input type="text" class="input-field" value="${ex.name || ''}" data-day="${dayIndex}" data-ex="${exIndex}" data-field="name"></td><td class="p-2"><input type="text" class="input-field" value="${ex.sets || ''}" data-day="${dayIndex}" data-ex="${exIndex}" data-field="sets"></td><td class="p-2"><input type="text" class="input-field" value="${ex.desc || ''}" data-day="${dayIndex}" data-ex="${exIndex}" data-field="desc"></td><td class="p-2 text-center"><button class="btn btn-danger btn-sm px-3 py-1 remove-exercise-btn" data-day="${dayIndex}" data-ex="${exIndex}"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+            return `<div id="day-content-${dayIndex}" class="day-content ${dayIndex === activeDayIndex ? '' : 'hidden'}"><div class="overflow-x-auto"><table class="w-full text-right"><thead><tr><th class="p-2 w-2/5">حرکت</th><th class="p-2 w-1/5">ست</th><th class="p-2 w-2/5">توضیحات</th><th class="p-2">حذف</th></tr></thead><tbody>${exercisesHtml}</tbody></table></div><button class="btn btn-secondary mt-4 add-exercise-btn" data-day="${dayIndex}"><i class="fas fa-plus ml-2"></i>افزودن حرکت</button></div>`;
+        }).join('');
+        editorScreen.innerHTML = `
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+                 <h2 class="text-2xl font-bold">برنامه: <input type="text" id="athlete-name-input" class="bg-transparent border-b-2 border-gray-600 focus:border-indigo-500 outline-none w-full sm:w-auto" value="${athlete.name || ''}"></h2>
+                 <div class="flex gap-2 flex-wrap"><button id="share-btn" class="btn btn-success flex-grow sm:flex-grow-0"><i class="fas fa-share-alt ml-2"></i>اشتراک</button><button id="save-all-btn" class="btn btn-primary flex-grow sm:flex-grow-0"><i class="fas fa-save ml-2"></i>ذخیره</button><button id="delete-athlete-btn" class="btn btn-danger flex-grow sm:flex-grow-0"><i class="fas fa-user-times ml-2"></i>حذف</button></div>
+            </div>
+            <div class="card p-6 mb-6"><div class="grid md:grid-cols-2 gap-4"><div><label class="block mb-2 font-semibold text-gray-400">تاریخ شروع</label><input type="text" id="start-date" class="input-field" value="${plan.startDate || ''}"></div><div><label class="block mb-2 font-semibold text-gray-400">تاریخ پایان</label><input type="text" id="end-date" class="input-field" value="${plan.endDate || ''}"></div></div></div>
+            <div class="card p-6 mb-6">
+                <div class="flex items-center gap-2 mb-4 border-b border-gray-700 pb-4 overflow-x-auto"><div id="tabs-container" class="flex items-center gap-2">${tabsHtml}</div><button id="add-day-btn" class="btn btn-secondary flex-shrink-0 px-3 py-2 mr-auto"><i class="fas fa-plus"></i></button><button id="remove-day-btn" class="btn btn-danger flex-shrink-0 px-3 py-2"><i class="fas fa-trash"></i></button></div>
+                <div id="days-content-container">${daysHtml}</div>
+            </div>
+            <div class="grid md:grid-cols-2 gap-6"><div class="card p-6"><label class="block mb-2 font-bold text-purple-400">نکات و دستور‌العمل‌ها</label><textarea id="instructions-area" class="input-field" rows="5">${(plan.instructions || []).join('\n')}</textarea></div><div class="card p-6"><label class="block mb-2 font-bold text-amber-400">نکات مهم</label><textarea id="important-notes-area" class="input-field" rows="5">${(plan.importantNotes || []).join('\n')}</textarea></div></div>`;
+    }
+
+    // Load an athlete into the editor
+    function loadAthleteEditor(id) {
+        const athlete = athletes.find(a => a.id === id);
+        if (athlete) { currentAthleteId = id; renderAthleteList(); renderEditor(athlete); }
+    }
+
+    // Convert numbers to Persian ordinal names
+    function numberToPersianOrdinal(n) {
+        const ordinals = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم'];
+        if (n > 0 && n <= ordinals.length) return ordinals[n - 1];
+        return n;
+    }
+
+    // Extract current editor data from the DOM
+    function getEditorData() {
+        if (!currentAthleteId) return null;
+        const editorScreen = document.getElementById('editor-screen');
+        if (!editorScreen || editorScreen.classList.contains('hidden')) return null;
+        const originalAthlete = athletes.find(a => a.id === currentAthleteId);
+        if (!originalAthlete) return null;
+        const updatedAthleteData = {
+            id: currentAthleteId,
+            name: document.getElementById('athlete-name-input').value,
+            plan: {
+                ...originalAthlete.plan,
+                startDate: document.getElementById('start-date').value,
+                endDate: document.getElementById('end-date').value,
+                instructions: document.getElementById('instructions-area').value.split('\n').filter(line => line.trim() !== ''),
+                importantNotes: document.getElementById('important-notes-area').value.split('\n').filter(line => line.trim() !== ''),
+                workoutDays: []
+            }
+        };
+        document.querySelectorAll('.day-content').forEach((dayContent, dayIndex) => {
+            const dayTab = document.querySelector(`.day-tab[data-day="${dayIndex}"]`);
+            const exercises = [];
+            dayContent.querySelectorAll('.exercise-row').forEach(row => {
+                exercises.push({
+                    name: row.querySelector(`input[data-field="name"]`).value,
+                    sets: row.querySelector(`input[data-field="sets"]`).value,
+                    desc: row.querySelector(`input[data-field="desc"]`).value
+                });
+            });
+            updatedAthleteData.plan.workoutDays.push({
+                day: dayTab ? dayTab.textContent : `روز ${numberToPersianOrdinal(dayIndex + 1)}`,
+                exercises: exercises
+            });
+        });
+        return updatedAthleteData;
+    }
+
+    // Create a new athlete via API
+    function addNewAthlete(name) {
+        const newAthlete = {
+            name: name,
+            plan: {
+                trainerName: 'باران حیدری',
+                trainerPhone: '09187231278',
+                startDate: '', endDate: '',
+                instructions: [], workoutDays: [{ day: 'روز اول', exercises: [] }], importantNotes: []
+            }
+        };
+        fetch('/api/athletes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': token ? 'Bearer ' + token : '' },
+            body: JSON.stringify(newAthlete)
+        }).then(resp => {
+            if (resp.status === 401) throw new Error('unauthorized');
+            return resp.json();
+        }).then(data => {
+            showToast(`شاگرد \"${name}\" با موفقیت اضافه شد.`);
+            loadAthleteList();
+            loadAthleteEditor(data.id);
+        }).catch(err => {
+            if (err.message === 'unauthorized') {
+                localStorage.removeItem('adminToken');
+                token = null;
+                renderLoginView();
+            } else {
+                console.error(err);
+                showToast('خطا در افزودن شاگرد.');
+            }
+        });
+    }
+
+    // Save current athlete via API
+    function saveCurrentAthlete(showSuccessToast = false) {
+        if (!currentAthleteId) return;
+        const saveBtn = document.getElementById('save-all-btn');
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i>ذخیره سازی...';
+        const updatedData = getEditorData();
+        if (!updatedData) {
+            showToast('خطا: اطلاعات شاگرد یافت نشد.');
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save ml-2"></i>ذخیره';
+            return;
+        }
+        if (updatedData.plan.workoutDays) {
+            updatedData.plan.workoutDays.forEach((day, index) => { day.day = `روز ${numberToPersianOrdinal(index + 1)}`; });
+        }
+        const { id, ...payload } = updatedData;
+        fetch(`/api/athletes/${currentAthleteId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': token ? 'Bearer ' + token : '' },
+            body: JSON.stringify(payload)
+        }).then(resp => {
+            if (resp.status === 401) throw new Error('unauthorized');
+            return resp.json();
+        }).then(data => {
+            if (showSuccessToast) showToast(`اطلاعات ${data.name} با موفقیت ذخیره شد.`);
+            loadAthleteList();
+        }).catch(err => {
+            if (err.message === 'unauthorized') {
+                localStorage.removeItem('adminToken');
+                token = null;
+                renderLoginView();
+            } else {
+                console.error(err);
+                showToast('خطا در ذخیره سازی اطلاعات.');
+            }
+        }).finally(() => {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save ml-2"></i>ذخیره';
+        });
+    }
+
+    // Delete current athlete via API
+    function deleteCurrentAthlete() {
+        if (!currentAthleteId) return;
+        const athleteName = athletes.find(a => a.id === currentAthleteId)?.name;
+        showConfirm(`آیا از حذف شاگرد \"${athleteName}\" مطمئن هستید؟`, () => {
+            fetch(`/api/athletes/${currentAthleteId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': token ? 'Bearer ' + token : '' }
+            }).then(resp => {
+                if (resp.status === 401) throw new Error('unauthorized');
+                return resp.json();
+            }).then(() => {
+                showToast(`شاگرد \"${athleteName}\" حذف شد.`);
+                showWelcomeScreen();
+                loadAthleteList();
+            }).catch(err => {
+                if (err.message === 'unauthorized') {
+                    localStorage.removeItem('adminToken');
+                    token = null;
+                    renderLoginView();
+                } else {
+                    console.error(err);
+                    showToast('خطا در حذف شاگرد.');
+                }
+            });
+        });
+    }
+
+    // Show the welcome screen
+    function showWelcomeScreen() {
+        const editorScreen = document.getElementById('editor-screen');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        if (editorScreen) editorScreen.classList.add('hidden');
+        if (welcomeScreen) welcomeScreen.classList.remove('hidden');
+        currentAthleteId = null;
+        renderAthleteList();
+    }
+
+    // Share the current athlete's plan by generating a URL
+    function shareCurrentAthlete() {
+        saveCurrentAthlete(false);
+        if (!currentAthleteId) {
+            showToast('لطفاً ابتدا یک شاگرد را انتخاب کنید.');
+            return;
+        }
+        const shareLink = `${window.location.origin}${window.location.pathname}?id=${currentAthleteId}`;
+        const modal = document.getElementById('share-modal');
+        const linkInput = document.getElementById('share-link-input');
+        linkInput.value = shareLink;
+        modal.classList.remove('hidden');
+        document.getElementById('copy-link-btn').onclick = () => {
+            linkInput.select();
+            document.execCommand('copy');
+            showToast('لینک کپی شد!');
+        };
+        document.getElementById('close-modal-btn').onclick = () => modal.classList.add('hidden');
+    }
+
+    // Logout current user
+    function logout() {
+        if (!token) {
+            localStorage.removeItem('adminToken');
+            renderLoginView();
+            return;
+        }
+        fetch('/api/logout', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token }
+        }).finally(() => {
+            localStorage.removeItem('adminToken');
+            token = null;
+            renderLoginView();
+        });
+    }
+
+    // Handle dynamic changes in the editor (add/remove exercises/days)
+    function handleDynamicEditorChanges(e) {
+        const athleteIndex = athletes.findIndex(a => a.id === currentAthleteId);
+        if (athleteIndex === -1) return false;
+        const currentDOMState = getEditorData();
+        if (!currentDOMState) return false;
+        let athlete = currentDOMState;
+        let modified = false;
+        let activeDay = document.querySelector('.day-tab.tab-active-admin')?.dataset.day || 0;
+        let newActiveIndex = parseInt(activeDay, 10);
+        const addExerciseBtn = e.target.closest('.add-exercise-btn');
+        if (addExerciseBtn) {
+            const dayIndex = parseInt(addExerciseBtn.dataset.day, 10);
+            if (athlete.plan.workoutDays?.[dayIndex]) {
+                if (!athlete.plan.workoutDays[dayIndex].exercises) athlete.plan.workoutDays[dayIndex].exercises = [];
+                athlete.plan.workoutDays[dayIndex].exercises.push({ name: '', sets: '', desc: '' });
+                modified = true;
+            }
+        }
+        const removeExerciseBtn = e.target.closest('.remove-exercise-btn');
+        if (removeExerciseBtn) {
+            const dayIndex = parseInt(removeExerciseBtn.dataset.day, 10);
+            const exIndex = parseInt(removeExerciseBtn.dataset.ex, 10);
+            if (athlete.plan.workoutDays?.[dayIndex]?.exercises) {
+                athlete.plan.workoutDays[dayIndex].exercises.splice(exIndex, 1);
+                modified = true;
+            }
+        }
+        const addDayBtn = e.target.closest('#add-day-btn');
+        if (addDayBtn) {
+            if (!athlete.plan.workoutDays) athlete.plan.workoutDays = [];
+            const newDayIndex = athlete.plan.workoutDays.length;
+            const newDayName = `روز ${numberToPersianOrdinal(newDayIndex + 1)}`;
+            athlete.plan.workoutDays.push({ day: newDayName, exercises: [] });
+            newActiveIndex = newDayIndex;
+            modified = true;
+        }
+        const removeDayBtn = e.target.closest('#remove-day-btn');
+        if (removeDayBtn) {
+            const activeTab = document.querySelector('.day-tab.tab-active-admin');
+            if (!activeTab) return true;
+            showConfirm('آیا از حذف این روز تمرینی مطمئن هستید؟', () => {
+                const dayIndex = parseInt(activeTab.dataset.day, 10);
+                const athleteStateAfterConfirm = getEditorData();
+                if (athleteStateAfterConfirm.plan.workoutDays) {
+                    athleteStateAfterConfirm.plan.workoutDays.splice(dayIndex, 1);
+                    athleteStateAfterConfirm.plan.workoutDays.forEach((day, index) => { day.day = `روز ${numberToPersianOrdinal(index + 1)}`; });
+                    athletes[athleteIndex] = athleteStateAfterConfirm;
+                    const newActiveIndexAfterDelete = Math.max(0, dayIndex - 1);
+                    renderEditor(athleteStateAfterConfirm, newActiveIndexAfterDelete);
+                }
+            });
+            return true;
+        }
+        if (modified) {
+            athletes[athleteIndex] = athlete;
+            renderEditor(athlete, newActiveIndex);
+            return true;
+        }
+        return false;
+    }
+
+    // Setup admin panel event listeners
+    function setupAdminEventListeners() {
+        document.body.addEventListener('click', e => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (e.target.closest('#menu-toggle-btn')) { sidebar?.classList.add('sidebar-open'); overlay?.classList.remove('hidden'); }
+            if (e.target.closest('#sidebar-overlay')) { sidebar?.classList.remove('sidebar-open'); overlay?.classList.add('hidden'); }
+            if (e.target.closest('#add-athlete-btn')) {
+                const name = prompt('نام شاگرد جدید را وارد کنید:');
+                if (name && name.trim()) addNewAthlete(name.trim());
+            }
+            if (e.target.closest('#logout-btn')) {
+                logout();
+            }
+            const mainContent = document.getElementById('main-content');
+            if (mainContent && mainContent.contains(e.target)) {
+                if (e.target.closest('#save-all-btn')) { saveCurrentAthlete(true); return; }
+                if (e.target.closest('#delete-athlete-btn')) { deleteCurrentAthlete(); return; }
+                if (e.target.closest('#share-btn')) { shareCurrentAthlete(); return; }
+                const dayTab = e.target.closest('.day-tab');
+                if (dayTab) {
+                    const dayIndex = parseInt(dayTab.dataset.day, 10);
+                    const currentData = getEditorData();
+                    if (currentData) renderEditor(currentData, dayIndex);
+                    return;
+                }
+                if (handleDynamicEditorChanges(e)) return;
+            }
+        });
+    }
+
+    // Fetch a public athlete plan and render it
+    function handlePublicView(athleteId) {
+        appContainer.innerHTML = '<div class="h-screen flex items-center justify-center text-center"><p class="text-gray-400">در حال بارگذاری برنامه...</p></div>';
+        fetch(`/api/athletes/${athleteId}`).then(resp => {
+            if (resp.status === 404) throw new Error('notfound');
+            return resp.json();
+        }).then(data => {
+            const plan = data.plan || {};
+            const planData = { ...plan, athleteName: data.name };
+            renderUserView(planData);
+        }).catch(err => {
+            if (err.message === 'notfound') {
+                appContainer.innerHTML = '<div class="h-screen flex items-center justify-center text-center"><h1 class="text-2xl font-bold text-red-500">برنامه یافت نشد</h1><p class="text-gray-400">ممکن است لینک اشتباه باشد یا برنامه حذف شده باشد.</p></div>';
+            } else {
+                console.error(err);
+                appContainer.innerHTML = '<div class="h-screen flex items-center justify-center text-center"><h1 class="text-2xl font-bold text-red-500">خطا در بارگذاری</h1><p class="text-gray-400">لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.</p></div>';
+            }
+        });
+    }
+
+    // Initialize the app
+    function main() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const athleteId = urlParams.get('id');
+        if (athleteId) {
+            handlePublicView(athleteId);
+        } else {
+            if (token) {
+                renderAdminPanel();
+                loadAthleteList();
+            } else {
+                renderLoginView();
+            }
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', main);
+</script>
+</body>
+</html>
