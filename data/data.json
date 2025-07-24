@@ -1,20 +1,6 @@
 {
   "athletes": [
     {
-      "id": 2,
-      "name": "Reza",
-      "plan": {
-        "trainerName": "Trainer",
-        "trainerPhone": "123",
-        "startDate": "",
-        "endDate": "",
-        "workoutDays": [],
-        "instructions": [],
-        "importantNotes": [],
-        "theme": "theme-default"
-      }
-    },
-    {
       "name": "asdf",
       "plan": {
         "trainerName": "باران حیدری",
