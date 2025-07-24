@@ -5,7 +5,7 @@ services:
     build: .
     container_name: fitness-app
     ports:
-      - "3000:3000"
+      - "1122:1122"
     environment:
       - ADMIN_EMAIL=${ADMIN_EMAIL}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
